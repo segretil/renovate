@@ -3,7 +3,7 @@ import { regEx } from '../../../util/regex';
 import type { PackageDependency, PackageFile } from '../types';
 
 const regex = regEx(
-  `(?<name>[-_a-z0-9]+)/(?<version>[^@\n{*"']+)(?<userChannel>@[-_a-zA-Z0-9]+/[^\n.{*"' ]+)?`
+  `(?<name>[-_a-z0-9]+)/(?<version>[^@\n{*"']+)(?<userChannel>@[-_a-zA-Z0-9]+/[^#\n.{*"' ]+)?#?(?<revision>[-_a-f0-9]+[^\n{*"'])?`
 );
 
 function setDepType(content: string, originalType: string): string {
@@ -33,8 +33,8 @@ export function extractPackageFile(content: string): PackageFile | null {
     const rawLines = section.split('\n').filter(is.nonEmptyString);
 
     for (const rawline of rawLines) {
-      // don't process after a comment
-      const sanitizedLine = rawline.split('#')[0].split('//')[0];
+      // don't process after a comment TODO: Why is this whith new line  ?
+      const sanitizedLine = rawline;
       if (sanitizedLine) {
         depType = setDepType(sanitizedLine, depType);
         // extract all dependencies from each line
@@ -56,6 +56,7 @@ export function extractPackageFile(content: string): PackageFile | null {
             }
             const packageName = `${depName}/${currentValue}${userAndChannel}`;
 
+            // TODO: put this at the end with opt maybe
             dep = {
               ...dep,
               depName,
@@ -64,6 +65,13 @@ export function extractPackageFile(content: string): PackageFile | null {
               replaceString,
               depType,
             };
+            if (matches.groups.revision) {
+              dep.currentDigest = matches.groups.revision;
+              dep.autoReplaceStringTemplate = `{{depName}}/{{newValue}}${userAndChannel}{{#if newDigest}}#{{newDigest}}{{/if}}`;
+              dep.replaceString = `${replaceString}#${dep.currentDigest}`;
+              dep.packageName = `${packageName}#${dep.currentDigest}`;
+            }
+
             deps.push(dep);
           }
         }
