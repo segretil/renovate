@@ -1,5 +1,6 @@
 import { DescribePullThroughCacheRulesCommand } from '@aws-sdk/client-ecr';
 import is from '@sindresorhus/is';
+import type { StrNodeChildMatcher } from 'good-enough-parser/dist/cjs/query/matchers/str-matcher';
 import { load } from 'js-yaml';
 import { logger } from '../../../logger';
 import { cache } from '../../../util/cache/package/decorator';
@@ -62,6 +63,23 @@ export class ConanDatasource extends Datasource {
     };
   }
 
+  async getNewDigest(
+    url: string,
+    packageName: string
+  ): Promise<string | undefined> {
+    const revisionLookUp = joinUrlParts(
+      url,
+      `v2/conans/${packageName}/revisions`
+    );
+    const revisionRep = await this.http.getJson<ConanRevisionsJSON>(
+      revisionLookUp
+    );
+    const revisions = revisionRep?.body.revisions;
+    if (revisions) {
+      return revisions[0].revision;
+    }
+  }
+
   @cache({
     namespace: `datasource-${datasource}`,
     key: ({ registryUrl, packageName }: GetReleasesConfig) =>
@@ -102,24 +120,17 @@ export class ConanDatasource extends Datasource {
             if (fromMatch?.groups?.version && fromMatch?.groups?.userChannel) {
               const version = fromMatch.groups.version;
               if (fromMatch.groups.userChannel === userAndChannel) {
-                // debugger;
-                const packageNameWithoutRevision = packageName
-                  .split('#')[0]
-                  .replace('@', '/');
-                const revisionLookUp = joinUrlParts(
-                  url,
-                  `v2/conans/${packageNameWithoutRevision}/revisions`
-                );
-                const revisionRep = await this.http.getJson<ConanRevisionsJSON>(
-                  revisionLookUp
-                );
-                debugger;
-                const revisions = revisionRep?.body.revisions;
-                let newDigest = '42';
-                if (revisions) {
-                  newDigest = revisions[0].revision ?? '43';
+                let newDigest: string | undefined = undefined;
+                if (revision) {
+                  const packageNameWithoutRevision = `${depName}/${version}${userAndChannel.replace(
+                    '@',
+                    '/'
+                  )}`;
+                  newDigest = await this.getNewDigest(
+                    url,
+                    packageNameWithoutRevision
+                  );
                 }
-
                 const result: Release = {
                   version,
                   newDigest,
