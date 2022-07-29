@@ -1,3 +1,4 @@
+import { DescribePullThroughCacheRulesCommand } from '@aws-sdk/client-ecr';
 import is from '@sindresorhus/is';
 import { load } from 'js-yaml';
 import { logger } from '../../../logger';
@@ -7,7 +8,7 @@ import { ensureTrailingSlash, joinUrlParts } from '../../../util/url';
 import { Datasource } from '../datasource';
 import type { GetReleasesConfig, Release, ReleaseResult } from '../types';
 import { conanDatasourceRegex, datasource, defaultRegistryUrl } from './common';
-import type { ConanJSON, ConanYAML } from './types';
+import type { ConanJSON, ConanYAML, ConanRevisionsJSON } from './types';
 
 function getRevision(packageName: string): string | undefined {
   const splitted = packageName.split('#');
@@ -52,9 +53,11 @@ export class ConanDatasource extends Datasource {
     const doc = load(res.body, {
       json: true,
     }) as ConanYAML;
+    const newDigest = '423';
     return {
       releases: Object.keys(doc?.versions ?? {}).map((version) => ({
         version,
+        newDigest,
       })),
     };
   }
@@ -68,13 +71,15 @@ export class ConanDatasource extends Datasource {
     registryUrl,
     packageName,
   }: GetReleasesConfig): Promise<ReleaseResult | null> {
-    logger.debug('I am here!!');
+    // debugger;
     const depName = packageName.split('/')[0];
     const userAndChannel = '@' + packageName.split('@')[1].split('#')[0];
-    // const revision = getRevision(packageName);
+    // TODO: check undefined
+    const revision = getRevision(packageName);
     if (
       is.string(registryUrl) &&
-      ensureTrailingSlash(registryUrl) === defaultRegistryUrl
+      ensureTrailingSlash(registryUrl) === defaultRegistryUrl &&
+      is.undefined(revision)
     ) {
       return this.getConanCenterReleases(depName, userAndChannel);
     }
@@ -86,6 +91,7 @@ export class ConanDatasource extends Datasource {
 
       try {
         const rep = await this.http.getJson<ConanJSON>(lookupUrl);
+        // debugger;
         const versions = rep?.body;
         if (versions) {
           logger.trace({ lookupUrl }, 'Got conan api result');
@@ -96,7 +102,24 @@ export class ConanDatasource extends Datasource {
             if (fromMatch?.groups?.version && fromMatch?.groups?.userChannel) {
               const version = fromMatch.groups.version;
               if (fromMatch.groups.userChannel === userAndChannel) {
-                const newDigest = '42';
+                // debugger;
+                const packageNameWithoutRevision = packageName
+                  .split('#')[0]
+                  .replace('@', '/');
+                const revisionLookUp = joinUrlParts(
+                  url,
+                  `v2/conans/${packageNameWithoutRevision}/revisions`
+                );
+                const revisionRep = await this.http.getJson<ConanRevisionsJSON>(
+                  revisionLookUp
+                );
+                debugger;
+                const revisions = revisionRep?.body.revisions;
+                let newDigest = '42';
+                if (revisions) {
+                  newDigest = revisions[0].revision ?? '43';
+                }
+
                 const result: Release = {
                   version,
                   newDigest,
