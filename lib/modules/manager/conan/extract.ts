@@ -35,7 +35,7 @@ export function extractPackageFile(content: string): PackageFile | null {
     for (const rawline of rawLines) {
       // don't process after a comment TODO: Why is this whith new line  ?
       const sanitizedLine = rawline;
-      if (sanitizedLine) {
+      if (!sanitizedLine.startsWith('#')) {
         depType = setDepType(sanitizedLine, depType);
         // extract all dependencies from each line
         const lines = sanitizedLine.split(/["'],/);

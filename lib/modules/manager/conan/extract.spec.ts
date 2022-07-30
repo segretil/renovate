@@ -36,6 +36,16 @@ describe('modules/manager/conan/extract', () => {
           replaceString: 'fake/8.62.134@test/dev',
         },
         {
+          autoReplaceStringTemplate:
+            '{{depName}}/{{newValue}}@_/_{{#if newDigest}}#{{newDigest}}{{/if}}',
+          currentDigest: 'aff2d03608351db075ec1348a3afc9ff',
+          currentValue: '1.17.2',
+          depName: 'cairo',
+          depType: 'requires',
+          packageName: 'cairo/1.17.2@_/_#aff2d03608351db075ec1348a3afc9ff',
+          replaceString: 'cairo/1.17.2@_/_#aff2d03608351db075ec1348a3afc9ff',
+        },
+        {
           currentValue: '[>1.1 <2.1, include_prerelease=True]',
           depName: '7zip',
           depType: 'build_requires',
@@ -85,6 +95,16 @@ describe('modules/manager/conan/extract', () => {
           depType: 'build_requires',
           packageName: 'cryptopp/[1.2.7 || >=1.2.9 <2.0.0]@test/local',
           replaceString: 'cryptopp/[1.2.7 || >=1.2.9 <2.0.0]@test/local',
+        },
+        {
+          autoReplaceStringTemplate:
+            '{{depName}}/{{newValue}}@_/_{{#if newDigest}}#{{newDigest}}{{/if}}',
+          currentDigest: 'bc592346b33fd19c1fbffce25d1e4236',
+          currentValue: '0.63.0',
+          depName: 'meson',
+          depType: 'build_requires',
+          packageName: 'meson/0.63.0@_/_#bc592346b33fd19c1fbffce25d1e4236',
+          replaceString: 'meson/0.63.0@_/_#bc592346b33fd19c1fbffce25d1e4236',
         },
       ]);
     });
