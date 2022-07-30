@@ -202,6 +202,17 @@ describe('modules/manager/conan/extract', () => {
           replaceString: 'req_g/[>1.0 <1.8]@user/stable',
         },
         {
+          autoReplaceStringTemplate:
+            '{{depName}}/{{newValue}}@user/stable{{#if newDigest}}#{{newDigest}}{{/if}}',
+          currentDigest: 'bc592346b33fd19c1fbffce25d1e4236',
+          currentValue: '1.0',
+          depName: 'req_l',
+          depType: 'requires',
+          packageName: 'req_l/1.0@user/stable#bc592346b33fd19c1fbffce25d1e4236',
+          replaceString:
+            'req_l/1.0@user/stable#bc592346b33fd19c1fbffce25d1e4236',
+        },
+        {
           currentValue: '1.2',
           depName: 'req_i',
           depType: 'requires',

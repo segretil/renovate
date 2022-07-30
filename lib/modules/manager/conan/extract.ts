@@ -18,6 +18,10 @@ function setDepType(content: string, originalType: string): string {
   return depType;
 }
 
+function isComment(line: string): boolean {
+  return line.trim().startsWith('#');
+}
+
 export function extractPackageFile(content: string): PackageFile | null {
   // only process sections where requirements are defined
   const sections = content.split(/def |\n\[/).filter(
@@ -32,13 +36,11 @@ export function extractPackageFile(content: string): PackageFile | null {
     let depType = setDepType(section, 'requires');
     const rawLines = section.split('\n').filter(is.nonEmptyString);
 
-    for (const rawline of rawLines) {
-      // don't process after a comment TODO: Why is this whith new line  ?
-      const sanitizedLine = rawline;
-      if (!sanitizedLine.startsWith('#')) {
-        depType = setDepType(sanitizedLine, depType);
+    for (const rawLine of rawLines) {
+      if (!isComment(rawLine)) {
+        depType = setDepType(rawLine, depType);
         // extract all dependencies from each line
-        const lines = sanitizedLine.split(/["'],/);
+        const lines = rawLine.split(/["'],/);
         for (const line of lines) {
           const matches = regex.exec(line.trim());
           if (matches?.groups) {
