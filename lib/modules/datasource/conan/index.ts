@@ -52,11 +52,9 @@ export class ConanDatasource extends Datasource {
     const doc = load(res.body, {
       json: true,
     }) as ConanYAML;
-    const newDigest = '423';
     return {
       releases: Object.keys(doc?.versions ?? {}).map((version) => ({
         version,
-        newDigest,
       })),
     };
   }
