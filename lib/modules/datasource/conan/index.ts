@@ -1,6 +1,4 @@
-import { DescribePullThroughCacheRulesCommand } from '@aws-sdk/client-ecr';
 import is from '@sindresorhus/is';
-import type { StrNodeChildMatcher } from 'good-enough-parser/dist/cjs/query/matchers/str-matcher';
 import { load } from 'js-yaml';
 import { logger } from '../../../logger';
 import { cache } from '../../../util/cache/package/decorator';
@@ -9,7 +7,7 @@ import { ensureTrailingSlash, joinUrlParts } from '../../../util/url';
 import { Datasource } from '../datasource';
 import type { GetReleasesConfig, Release, ReleaseResult } from '../types';
 import { conanDatasourceRegex, datasource, defaultRegistryUrl } from './common';
-import type { ConanJSON, ConanYAML, ConanRevisionsJSON } from './types';
+import type { ConanJSON, ConanRevisionsJSON, ConanYAML } from './types';
 
 function getRevision(packageName: string): string | undefined {
   const splitted = packageName.split('#');
@@ -75,9 +73,7 @@ export class ConanDatasource extends Datasource {
       revisionLookUp
     );
     const revisions = revisionRep?.body.revisions;
-    if (revisions) {
-      return revisions[0].revision;
-    }
+    return revisions ? revisions[0].revision : undefined;
   }
 
   @cache({
@@ -122,14 +118,11 @@ export class ConanDatasource extends Datasource {
               if (fromMatch.groups.userChannel === userAndChannel) {
                 let newDigest: string | undefined = undefined;
                 if (revision) {
-                  const packageNameWithoutRevision = `${depName}/${version}${userAndChannel.replace(
+                  const currentPackageName = `${depName}/${version}${userAndChannel.replace(
                     '@',
                     '/'
                   )}`;
-                  newDigest = await this.getNewDigest(
-                    url,
-                    packageNameWithoutRevision
-                  );
+                  newDigest = await this.getNewDigest(url, currentPackageName);
                 }
                 const result: Release = {
                   version,

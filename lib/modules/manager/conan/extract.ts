@@ -1,5 +1,4 @@
 import is from '@sindresorhus/is';
-import { debug } from 'console';
 import { regEx } from '../../../util/regex';
 import type { PackageDependency, PackageFile } from '../types';
 
